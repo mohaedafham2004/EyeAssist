@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1770230559236,
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "$2b$10$GWlcoAZRVd7Ln3w42Pb1Ferevph0xBIuTCDjeTyQwGYhJF9bVbf4a"
+  },
+  {
+    "id": 1770231729030,
+    "name": "Afham",
+    "email": "cit-24-01-0311@sltc.ac.lk",
+    "password": "$2b$10$zqChWP4EOw/o9gi24m04pOsA.645QXddIBqOjlk04amkzDxUGeKUm"
+  },
+  {
+    "id": 1770232010808,
+    "name": "Mohamed Afham",
+    "email": "mohamedafhama2004@gmail.com",
+    "password": "$2b$10$HvgcibTJyyxTwvZlStOem.mdD9U/vpOaO6eDTsvF8Fn8v1VBydwbS"
+  }
+]
