@@ -23,26 +23,64 @@ export default function App() {
   const [showScreenSelector, setShowScreenSelector] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  const handleSignUp = (userData: any) => {
-    // Save to user list for global logging
-    const allUsers = JSON.parse(localStorage.getItem('all_users') || '[]');
-    allUsers.push({ ...userData, timestamp: new Date().toISOString() });
-    localStorage.setItem('all_users', JSON.stringify(allUsers));
+  const handleSignUp = async (userData: any) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: userData.name,
+          email: userData.email,
+          password: userData.password
+        }),
+      });
 
-    // Legacy single user save
-    localStorage.setItem(`user_${userData.email}`, JSON.stringify(userData));
-    setUser(userData);
-    setCurrentScreen('menu');
+      const data = await response.json();
+
+      if (response.ok) {
+        // Save additional profile data to localStorage (legacy/extended profile)
+        localStorage.setItem(`user_${userData.email}`, JSON.stringify(userData));
+        setUser(userData);
+        setCurrentScreen('menu');
+        return true;
+      } else {
+        return data.message || 'Signup failed';
+      }
+    } catch (err) {
+      return 'Could not connect to server';
+    }
   };
 
-  const handleSignIn = (email: string) => {
-    const savedUser = localStorage.getItem(`user_${email}`);
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setCurrentScreen('menu');
-      return true;
+  const handleSignIn = async (email: string, password?: string) => {
+    try {
+      // Guest access bypass
+      if (email === 'guest@eyeassist.com') {
+        const guestUser = { name: 'Guest User', email: 'guest@eyeassist.com' };
+        setUser(guestUser);
+        setCurrentScreen('menu');
+        return true;
+      }
+
+      if (!password) return 'Password is required';
+
+      const response = await fetch('http://localhost:5000/api/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUser(data.user);
+        setCurrentScreen('menu');
+        return true;
+      } else {
+        return data.message || 'Invalid email or password';
+      }
+    } catch (err) {
+      return 'Could not connect to server';
     }
-    return false;
   };
 
   const renderScreen = () => {
