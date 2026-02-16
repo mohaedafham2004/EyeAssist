@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { MainMenuScreen } from './components/MainMenuScreen';
 import { VoiceInputScreen } from './components/VoiceInputScreen';
@@ -23,24 +23,31 @@ export default function App() {
   const [showScreenSelector, setShowScreenSelector] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  // Restore session on load
+  useEffect(() => {
+    const savedUser = localStorage.getItem('eyeassist_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+        setCurrentScreen('menu');
+      } catch (err) {
+        localStorage.removeItem('eyeassist_user');
+      }
+    }
+  }, []);
+
   const handleSignUp = async (userData: any) => {
     try {
-      const response = await fetch('http://localhost:5000/api/signup', {
+      const response = await fetch('/api/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          password: userData.password
-        }),
+        body: JSON.stringify(userData)
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        // Save additional profile data to localStorage (legacy/extended profile)
-        localStorage.setItem(`user_${userData.email}`, JSON.stringify(userData));
-        setUser(userData);
+        const userToSave = data.user || userData;
+        setUser(userToSave);
+        localStorage.setItem('eyeassist_user', JSON.stringify(userToSave));
         setCurrentScreen('menu');
         return true;
       } else {
@@ -52,35 +59,39 @@ export default function App() {
   };
 
   const handleSignIn = async (email: string, password?: string) => {
+    // Guest access
+    if (email === 'guest@eyeassist.com') {
+      const guestUser = { email: 'guest@eyeassist.com', name: 'Guest' };
+      setUser(guestUser);
+      localStorage.setItem('eyeassist_user', JSON.stringify(guestUser));
+      setCurrentScreen('menu');
+      return true;
+    }
+
     try {
-      // Guest access bypass
-      if (email === 'guest@eyeassist.com') {
-        const guestUser = { name: 'Guest User', email: 'guest@eyeassist.com' };
-        setUser(guestUser);
-        setCurrentScreen('menu');
-        return true;
-      }
-
-      if (!password) return 'Password is required';
-
-      const response = await fetch('http://localhost:5000/api/signin', {
+      const response = await fetch('/api/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
-
       const data = await response.json();
-
       if (response.ok) {
         setUser(data.user);
+        localStorage.setItem('eyeassist_user', JSON.stringify(data.user));
         setCurrentScreen('menu');
         return true;
       } else {
-        return data.message || 'Invalid email or password';
+        return data.message || 'Signin failed';
       }
     } catch (err) {
       return 'Could not connect to server';
     }
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    localStorage.removeItem('eyeassist_user');
+    setCurrentScreen('signin');
   };
 
   const renderScreen = () => {
@@ -113,7 +124,7 @@ export default function App() {
             onNavigateToRoutes={() => setCurrentScreen('routes')}
             onNavigateToVolunteer={() => setCurrentScreen('volunteer')}
             onNavigateToAI={() => setCurrentScreen('ai')}
-            onSignOut={() => setCurrentScreen('signin')}
+            onSignOut={handleSignOut}
             onSettings={() => setCurrentScreen('settings')}
             onDashboard={() => setCurrentScreen('dashboard')}
             user={user}
